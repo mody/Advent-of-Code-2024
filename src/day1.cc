@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 
 using Val = int64_t;
 using Vector = std::vector<Val>;
@@ -28,6 +29,28 @@ void part1(Vector v1, Vector v2)
     fmt::print("1: {}\n", sum);
 }
 
+
+void part2(Vector v1, Vector v2)
+{
+    assert(v1.size() == v2.size());
+
+    std::map<Val, Val> counts;
+    uint64_t sum{0};
+
+    for (auto const v : v1) {
+        auto const it {counts.find(v)};
+        if (it != counts.end()) {
+            sum += v * it->second;
+        } else {
+            const auto times {std::count_if(v2.cbegin(), v2.cend(), [&v](Val const& vv2) { return vv2 == v; })};
+            counts[v] = times;
+            sum += v * times;
+        }
+    }
+
+    fmt::print("2: {}\n", sum);
+}
+
 int main()
 {
     Vector v1, v2;
@@ -46,6 +69,7 @@ int main()
     }
 
     part1(v1, v2);
+    part2(v1, v2);
 
     return 0;
 }
