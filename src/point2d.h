@@ -28,10 +28,10 @@ struct Direction
 
     constexpr auto operator<=>(Direction const&) const = default;
 
-    constexpr Direction back() const noexcept { return Direction {dx * -1, dy * -1}; }
+    [[nodiscard]] constexpr Direction back() const noexcept { return Direction {dx * -1, dy * -1}; }
 
-    constexpr Direction cw90() const noexcept { return Direction {-dy, dx}; }
-    constexpr Direction ccw90() const noexcept { return Direction {dy, -dx}; }
+    [[nodiscard]] constexpr Direction cw90() const noexcept { return Direction {-dy, dx}; }
+    [[nodiscard]] constexpr Direction ccw90() const noexcept { return Direction {dy, -dx}; }
 
     friend size_t hash_value(Gfx_2d::Direction const& d) noexcept
     {
