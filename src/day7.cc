@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
@@ -8,6 +9,7 @@
 #include <deque>
 #include <iostream>
 #include <ranges>
+#include <string>
 #include <vector>
 
 struct Equation
@@ -18,7 +20,7 @@ struct Equation
 
 using Equations = std::vector<Equation>;
 
-bool process(Equation e)
+bool process1(Equation e)
 {
     const uint64_t v1 {e.values.front()};
     e.values.pop_front();
@@ -32,14 +34,14 @@ bool process(Equation e)
     if (v_plus <= e.result)
     {
         e.tmp = v_plus;
-        if (process(e))
+        if (process1(e))
             return true;
     }
 
     if (v_times <= e.result)
     {
         e.tmp = v_times;
-        if (process(e))
+        if (process1(e))
             return true;
     }
 
@@ -55,13 +57,73 @@ void part1(Equations equations)
         e.tmp = e.values.front();
         e.values.pop_front();
 
-        if (process(e))
+        if (process1(e))
         {
             sum += e.result;
         }
     }
 
     fmt::println("1: {}", sum);
+}
+
+uint64_t combine(uint64_t a, uint64_t b)
+{
+    const uint64_t b_digits {(b == 0) ? 1 : static_cast<uint64_t>(std::log10(b) + 1)};
+    return a * static_cast<uint64_t>(std::pow(10, b_digits)) + b;
+}
+
+bool process2(Equation e)
+{
+    const uint64_t v1 {e.values.front()};
+    e.values.pop_front();
+
+    const uint64_t v_plus {e.tmp + v1};
+    const uint64_t v_times {e.tmp * v1};
+    const uint64_t v_comb {combine(e.tmp, v1)};
+
+    if (e.values.empty())
+        return v_plus == e.result || v_times == e.result || v_comb == e.result;
+
+    if (v_comb <= e.result)
+    {
+        e.tmp = v_comb;
+        if (process2(e))
+            return true;
+    }
+
+    if (v_plus <= e.result)
+    {
+        e.tmp = v_plus;
+        if (process2(e))
+            return true;
+    }
+
+    if (v_times <= e.result)
+    {
+        e.tmp = v_times;
+        if (process2(e))
+            return true;
+    }
+
+    return false;
+}
+
+void part2(Equations equations)
+{
+    uint64_t sum {0};
+
+    for (auto e : equations)
+    {
+        e.tmp = e.values.front();
+        e.values.pop_front();
+
+        if (process2(e))
+        {
+            sum += e.result;
+        }
+    }
+
+    fmt::println("2: {}", sum);
 }
 
 int main()
@@ -90,6 +152,7 @@ int main()
     }
 
     part1(equations);
+    part2(equations);
 
     return 0;
 }
