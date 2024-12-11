@@ -9,10 +9,10 @@ set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow  -std=c++20 -fno-omit-frame-pointer 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Boost COMPONENTS regex REQUIRED)
-find_package(range-v3 REQUIRED)
+#  find_package(range-v3 REQUIRED)
 #  find_package(RapidJSON REQUIRED)
 find_package(fmt REQUIRED)
-find_package(TBB REQUIRED)
+#  find_package(TBB REQUIRED)
 
 #  find_package(PkgConfig)
 #  pkg_check_modules(CRYPTOPP libcryptopp)
@@ -43,16 +43,16 @@ target_link_libraries(day4 PRIVATE ${DEFAULT_LIBS})
 
 add_executable(day5 src/day5.cc)
 target_compile_features(day5 PRIVATE cxx_std_20)
-target_link_libraries(day5 PRIVATE ${DEFAULT_LIBS} tbb)
+target_link_libraries(day5 PRIVATE ${DEFAULT_LIBS})
 
 add_executable(day6 src/day6.cc)
 target_compile_features(day6 PRIVATE cxx_std_20)
 target_link_libraries(day6 PRIVATE ${DEFAULT_LIBS})
 
-#add_executable(day7 src/day7.cc)
-#target_compile_features(day7 PRIVATE cxx_std_20)
-#target_link_libraries(day7 PRIVATE ${DEFAULT_LIBS})
-#
+add_executable(day7 src/day7.cc)
+target_compile_features(day7 PRIVATE cxx_std_20)
+target_link_libraries(day7 PRIVATE ${DEFAULT_LIBS})
+
 #add_executable(day8 src/day8.cc)
 #target_compile_features(day8 PRIVATE cxx_std_20)
 #target_link_libraries(day8 PRIVATE ${DEFAULT_LIBS})
