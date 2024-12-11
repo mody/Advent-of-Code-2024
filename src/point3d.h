@@ -72,7 +72,7 @@ struct Point
 
     constexpr Direction operator-(Point const& o) const noexcept { return {x - o.x, y - o.y, z - o.z}; }
 
-    constexpr Coord manhattan_dist(Point const& o) const noexcept
+    [[nodiscard]] constexpr Coord manhattan_dist(Point const& o) const noexcept
     {
         return std::abs(x - o.x) + std::abs(y - o.y) + std::abs(z - o.z);
     }
