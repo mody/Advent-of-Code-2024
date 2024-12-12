@@ -2,13 +2,14 @@
 
 #include <compare>
 #include <concepts>
+#include <cstdint>
 #include <type_traits>
 
 namespace Gfx_2d {
 
 struct Direction
 {
-    int dx = 0, dy = 0;
+    int64_t dx = 0, dy = 0;
 
     template<std::integral T>
     constexpr Direction operator*(const T& num) const noexcept

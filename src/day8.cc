@@ -55,7 +55,7 @@ void part1(World const& world)
 
     for (auto const& [_, points] : world.antennas)
     {
-        for (auto const& me : points) 
+        for (auto const& me : points)
         {
             for (auto const& px : points)
             {
@@ -82,6 +82,39 @@ void part1(World const& world)
     } while(!done);
 
     fmt::println("1: {}", result.size());
+}
+
+void part2(World const& world)
+{
+    PointSet result;
+
+    auto apply = [&world](Point px, Gfx_2d::Direction  const& skip, PointSet& r)
+    {
+        for (;;)
+        {
+            px += skip;
+            if (px.x < 0 || px.y < 0 || px.x >= world.size_x || px.y >= world.size_y)
+            {
+                break;
+            }
+            r.insert(px);
+        }
+    };
+
+    for (auto const& [_, points] : world.antennas)
+    {
+        for (auto const& me : points)
+        {
+            for (auto const& px : points)
+            {
+                if (px == me) continue;
+                apply(px, (me - px), result);
+                apply(me, (px - me), result);
+            }
+        }
+    }
+
+    fmt::println("2: {}", result.size());
 }
 
 int main()
@@ -111,9 +144,8 @@ int main()
         world.size_y = y;
     }
 
-    fmt::println("size_x: {}, size_y: {}", world.size_x, world.size_y);
-
     part1(world);
+    part2(world);
 
     return 0;
 }
