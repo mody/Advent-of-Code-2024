@@ -3,50 +3,24 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/detail/adjacency_list.hpp>
-#include <boost/graph/dijkstra_shortest_paths_no_color_map.hpp>
-
+#include <deque>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 using Coord = unsigned;
 using Point = Gfx_2d::Point<Coord>;
-using World = std::unordered_map<Point, unsigned, boost::hash<Point>>;
+using PointMap = std::unordered_map<Point, unsigned, boost::hash<Point>>;
 using PointSet = std::unordered_set<Point, boost::hash<Point>>;
 
-void part1(World const& world, const unsigned max_x, const unsigned max_y)
+struct State
 {
-    using EdgeWeight = boost::property<boost::edge_weight_t, unsigned>;
-    using VertexDistance = boost::property<boost::vertex_distance_t, unsigned>;
-    using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, VertexDistance, EdgeWeight>;
-    using Vertex = boost::graph_traits<Graph>::vertex_descriptor;
+    Point px;
+    Gfx_2d::Direction dir;
+};
 
-    Graph g;
-    std::unordered_map<Point, Vertex, boost::hash<Point>> point2vertex;
-
-    for (Coord y {0}; y < max_y; ++y)
-    {
-        for (Coord x {0}; x < max_x; ++x)
-        {
-            point2vertex.insert({{x, y}, boost::add_vertex(g)});
-        }
-    }
-
-    for (auto const& [px, myHeight] : world)
-    {
-        const Vertex from = point2vertex.at(px);
-        for (auto const& dir : {Gfx_2d::Up, Gfx_2d::Down, Gfx_2d::Left, Gfx_2d::Right})
-        {
-            const auto dst {px + dir};
-            auto i2 = world.find(dst);
-            if (i2 != world.end() && i2->second == (myHeight + 1))
-            {
-                boost::add_edge(from, point2vertex.at(dst), EdgeWeight {1}, g);
-            }
-        }
-    }
-
+void process(PointMap const& world, const unsigned max_x, const unsigned max_y)
+{
     PointSet zeros, nines;
     for (auto const& [px, myHeight] : world)
     {
@@ -58,34 +32,53 @@ void part1(World const& world, const unsigned max_x, const unsigned max_y)
         }
     }
 
+    unsigned count1{0};
+    unsigned count2{0};
 
-    unsigned score {0};
-
-    for (auto const& from : zeros)
+    for (auto zero : zeros)
     {
-        const Vertex start_v = point2vertex.at(from);
-        auto dist_map = boost::get(boost::vertex_distance, g);
-        std::vector<Vertex> pred(boost::num_vertices(g));
-        boost::dijkstra_shortest_paths_no_color_map(
-            g, start_v, boost::distance_map(dist_map).predecessor_map(&pred[0]));
+        PointSet ninesHit;
+        PointMap ninesPaths; 
 
-        for (auto const& dst : nines)
+        std::deque<Point> work;
+        work.push_back(zero);
+
+        while (!work.empty())
         {
-            const Vertex dst_v = point2vertex.at(dst);
-            if (dist_map[dst_v] == 9)
+            Point px{work.front()};
+            work.pop_front();
+
+            if (world.at(px) == 9)
             {
-                ++score;
+                ninesHit.insert(px);
+                ninesPaths.insert({px, 0}).first->second++;
+                continue;
+            }
+
+            for (auto const& dir : {Gfx_2d::Up, Gfx_2d::Down, Gfx_2d::Left, Gfx_2d::Right})
+            {
+                const auto dst {px + dir};
+                if (auto it {world.find(dst)}; it != world.end())
+                {
+                    if (it->second == (world.at(px) + 1)) {
+                        work.push_front(dst);
+                    }
+                }
             }
         }
 
+        count1 += ninesHit.size();
+        for (auto const& [nine, cnt] : ninesPaths) {
+            count2 += cnt;
+        }
     }
 
-    fmt::println("1: {}", score);
+    fmt::println("1: {}\n2: {}", count1, count2);
 }
 
 int main()
 {
-    World world;
+    PointMap world;
     unsigned max_x {0}, max_y {0};
 
     {
@@ -108,7 +101,7 @@ int main()
         max_y = y;
     }
 
-    part1(world, max_x, max_y);
+    process(world, max_x, max_y);
 
     return 0;
 }
