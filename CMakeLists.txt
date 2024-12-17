@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.15)
 project(AOC2024)
 
 #  set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow -std=c++20 -fno-omit-frame-pointer -ggdb3 -O0")

@@ -21,11 +21,13 @@ struct Tile
 };
 
 using Map = std::unordered_map<Point, Tile>;
+using Area = std::map<unsigned, unsigned>;
+using Perimeter = std::map<unsigned, unsigned>;
 
-void part1(Map map, Coord const max_x, Coord const max_y)
+std::pair<Map, Area> classify(Map map, Coord const max_x, Coord const max_y)
 {
     unsigned fieldId {0};
-    std::map<unsigned, unsigned> area, perimeter;
+    Area area;
 
     for (;;)
     {
@@ -85,7 +87,24 @@ void part1(Map map, Coord const max_x, Coord const max_y)
         }
     }
 
+    return {map, area};
+}
 
+uint64_t calculateScore(Area const& area, Perimeter const& perimeter)
+{
+    assert(area.size() == perimeter.size());
+
+    uint64_t score {0};
+    for (auto const& [a, p] : ranges::views::zip(area, perimeter))
+    {
+        score += a.second * p.second;
+    }
+    return score;
+}
+
+Perimeter part1(Map const& map, Coord const max_x, Coord const max_y)
+{
+    Perimeter perimeter;
     for (Coord y {0}; y < max_y; ++y)
     {
         for (Coord x {0}; x < max_x; ++x)
@@ -111,19 +130,58 @@ void part1(Map map, Coord const max_x, Coord const max_y)
         }
     }
 
-    assert(area.size() == perimeter.size());
+    return perimeter;
+}
 
-    // fmt::println("area: {}", area);
-    // fmt::println("perimeter: {}", perimeter);
+Perimeter part2(Map const& map, Area const& area, Coord const max_x, Coord const max_y)
+{
+    Perimeter perimeter;
 
-    uint64_t score {0};
-    for (auto const& [a, p] : ranges::views::zip(area, perimeter))
+    auto count_sides = [&map](unsigned id, Point start, Gfx_2d::Direction moving, Gfx_2d::Direction testing) -> unsigned
     {
-        score += a.second * p.second;
+        unsigned sides{0};
+        for (; map.contains(start); start += testing.back())
+        {
+            bool found {false};
+            for (Point px {start}; map.contains(px); px += moving)
+            {
+                const Tile& tile {map.at(px)};
+                if (tile.fieldId != id)
+                {
+                    found = false;
+                    continue;
+                }
+
+                const Point pt {px + testing};
+                if (!map.contains(pt) || map.at(pt).fieldId != tile.fieldId)
+                {
+                    if (!found)
+                    {
+                        ++sides;
+                    }
+                    found = true;
+                }
+                else
+                {
+                    found = false;
+                }
+            }
+        }
+        return sides;
+    };
+
+    for (auto const& [id, _] : area)
+    {
+        auto& sides = perimeter.insert({id, 0}).first->second;
+        sides += count_sides(id, {0, 0}, Gfx_2d::Right, Gfx_2d::Up);
+        sides += count_sides(id, {0, 0}, Gfx_2d::Down, Gfx_2d::Left);
+        sides += count_sides(id, {max_x - 1, max_y - 1}, Gfx_2d::Left, Gfx_2d::Down);
+        sides += count_sides(id, {max_x - 1, max_y - 1}, Gfx_2d::Up, Gfx_2d::Right);
     }
 
-    fmt::println("1: {}", score);
+    return perimeter;
 }
+
 
 int main()
 {
@@ -148,7 +206,11 @@ int main()
         }
     }
 
-    part1(map, max_x, max_y);
+    Area area;
+    std::tie(map, area) = classify(map, max_x, max_y);
+
+    fmt::println("1: {}", calculateScore(area, part1(map, max_x, max_y)));
+    fmt::println("2: {}", calculateScore(area, part2(map, area, max_x, max_y)));
 
     return 0;
 }
