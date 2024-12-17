@@ -7,10 +7,11 @@
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include <algorithm>
 #include <iostream>
+#include <map>
 #include <unordered_map>
 #include <vector>
-#include <map>
 
 constexpr int64_t FIELD_MAX_X {101};
 constexpr int64_t FIELD_MAX_Y {103};
@@ -24,6 +25,14 @@ struct Robot
 {
     Point px {0, 0};
     Gfx_2d::Direction dir;
+
+    friend size_t hash_value(Robot const& r) noexcept
+    {
+        size_t seed = 0;
+        boost::hash_combine(seed, r.px);
+        boost::hash_combine(seed, r.dir);
+        return seed;
+    }
 };
 
 using Robots = std::vector<Robot>;
@@ -101,6 +110,56 @@ void part1(Robots robots)
     fmt::println("1: {}", score(robots));
 }
 
+void part2(Robots robots)
+{
+    for (unsigned i {1}; i < FIELD_MAX_X * FIELD_MAX_Y; ++i)
+    {
+        for (auto& r : robots)
+        {
+            r.px += r.dir;
+            while (r.px.x < 0)
+                r.px.x += FIELD_MAX_X;
+            while (r.px.y < 0)
+                r.px.y += FIELD_MAX_Y;
+            r.px.x %= FIELD_MAX_X;
+            r.px.y %= FIELD_MAX_Y;
+        }
+
+        std::unordered_map<Point, unsigned, boost::hash<Point>> points;
+        for (auto const& r : robots)
+        {
+            if (r.px.y > HALF_Y)
+                points.insert({r.px, 0}).first->second++;
+        }
+
+        for (unsigned y {HALF_Y}; y < FIELD_MAX_Y; ++y)
+        {
+            bool has_line{false};
+            Point from;
+            for (unsigned x {0}; x < FIELD_MAX_X; ++x)
+            {
+                Point to{x,y};
+                if (points.contains(to))
+                {
+                    if (!has_line) {
+                        from = to;
+                        has_line = true;
+                    }
+                }
+                else if (has_line)
+                {
+                    if ((to.x - from.x) > 10) {
+                        dump(robots);
+                        fmt::println("2: {}", i);
+                        return;
+                    }
+                    has_line = false;
+                }
+            }
+        }
+    }
+}
+
 int main()
 {
     Robots robots;
@@ -124,6 +183,7 @@ int main()
     }
 
     part1(robots);
+    part2(robots);
 
     return 0;
 }
