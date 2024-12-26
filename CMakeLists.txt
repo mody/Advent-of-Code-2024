@@ -16,7 +16,7 @@ find_package(Boost COMPONENTS regex REQUIRED)
 find_package(range-v3 REQUIRED)
 #  find_package(RapidJSON REQUIRED)
 find_package(fmt REQUIRED)
-#  find_package(TBB REQUIRED)
+find_package(TBB REQUIRED)
 
 #  find_package(PkgConfig)
 #  pkg_check_modules(CRYPTOPP libcryptopp)
@@ -93,10 +93,21 @@ add_executable(day16 src/day16.cc)
 target_compile_features(day16 PRIVATE cxx_std_20)
 target_link_libraries(day16 PRIVATE ${DEFAULT_LIBS} tbb)
 
-#add_executable(day17 src/day17.cc)
-#target_compile_features(day17 PRIVATE cxx_std_20)
-#target_link_libraries(day17 PRIVATE ${DEFAULT_LIBS})
-#
+add_executable(day17_comp src/day17_comp.cc)
+target_compile_features(day17_comp PRIVATE cxx_std_20)
+target_link_libraries(day17_comp PRIVATE ${DEFAULT_LIBS})
+
+add_custom_command(
+    OUTPUT  day17_CPU.h
+    COMMAND day17_comp < ${CMAKE_SOURCE_DIR}/day17.txt > ${CMAKE_CURRENT_BINARY_DIR}/day17_CPU.h
+    DEPENDS day17_comp ${CMAKE_SOURCE_DIR}/day17.txt
+)
+
+add_executable(day17 src/day17.cc ${CMAKE_CURRENT_BINARY_DIR}/day17_CPU.h)
+target_include_directories(day17 PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_compile_features(day17 PRIVATE cxx_std_20)
+target_link_libraries(day17 PRIVATE ${DEFAULT_LIBS} tbb)
+
 #add_executable(day18 src/day18.cc)
 #target_compile_features(day18 PRIVATE cxx_std_20)
 #target_link_libraries(day18 PRIVATE ${DEFAULT_LIBS})
