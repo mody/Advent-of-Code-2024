@@ -1,120 +1,75 @@
+#include "day17_CPU.h"
+
+#include <algorithm>
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include <range/v3/core.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/drop.hpp>
+#include <range/v3/view/transform.hpp>
+
 #include <iostream>
+#include <string>
 #include <vector>
 
-constexpr const char* header = R"XX(
-#include <boost/algorithm/string/join.hpp>
+using REG = uint64_t;
 
-#include <iostream>
-#include <cmath>
-#include <vector>
-
-constexpr unsigned to_reg(unsigned val)
+void part1(REG A, REG B, REG C)
 {
-    return val & 0x7;
-}
-
-int main() {
-)XX";
-
-
-std::string to_reg(char val)
-{
-    switch (val)
+    std::vector<REG> result1;
+    for (auto cpu {CPU(A, B, C)};;)
     {
-    case '4': return "regA"; break;
-    case '5': return "regB"; break;
-    case '6': return "regC"; break;
-    case '7': assert(false); break;
-    default: break;
+        auto v = cpu.run_once();
+        if (!v)
+            break;
+        result1.push_back(v.value());
     }
-    return std::string {} + val;
+
+    fmt::println(
+        "1: {}",
+        boost::algorithm::join(result1 | ranges::views::transform([](REG i) { return std::to_string(i); }), ","));
 }
 
-void process_commands(std::vector<std::string> const& input)
+// Inspiration in https://old.reddit.com/r/adventofcode/comments/1hg38ah/2024_day_17_solutions/m36hefc/
+std::optional<REG> process2(std::vector<REG> program1, REG prev = 0)
 {
-    assert((input.size() % 2) == 0);
+    if (program1.empty()) return prev;
 
-    std::cout << R"XX(
-        std::vector<std::string> output;
-
-        bool stop{false};
-        for (int ip{0}; !stop; ip +=2) {
-        switch(ip) {
-    )XX";
-
-    unsigned ip{0};
-    for (auto it = input.begin(); it != input.end();)
+    for (REG i = 0; i < (1 << 10); ++i)
     {
-        const char cmd {(*it++)[0]};
-        const char arg {(*it++)[0]};
-
-        std::cout << "\tcase " << ip << ":\n";
-
-        switch(cmd) {
-        case '0':
-            std::cout << "\t\tregA = regA / std::pow(2, " << to_reg(arg) << ");\n";
-            std::cout << "\t\tbreak;\n";
-            break;
-        case '1':
-            std::cout << "\t\tregB = regB ^ " << arg << ";\n";
-            std::cout << "\t\tbreak;\n";
-            break;
-        case '2':
-            std::cout << "\t\tregB = " << to_reg(arg) << " & 0x7;\n";
-            std::cout << "\t\tbreak;\n";
-            break;
-        case '3':
-            std::cout << "\t\tif (regA) ip = " << arg << " - 2;\n";
-            std::cout << "\t\tbreak;\n";
-            break;
-        case '4':
-            std::cout << "\t\tregB = regB ^ regC;\n";
-            std::cout << "\t\tbreak;\n";
-            break;
-        case '5':
-            std::cout << "\t\toutput.push_back(std::to_string(" << to_reg(arg) << " & 0x7));\n";
-            std::cout << "\t\tbreak;\n";
-            break;
-        case '6':
-            std::cout << "\t\tregB = regA / std::pow(2, " << to_reg(arg) << ");\n";
-            std::cout << "\t\tbreak;\n";
-            break;
-        case '7':
-            std::cout << "\t\tregC = regA / std::pow(2, " << to_reg(arg) << ");\n";
-            std::cout << "\t\tbreak;\n";
-            break;
-        default:
-            assert(false);
+        if ((i >> 3) == (prev & 0x7f))
+        {
+            auto cpu {CPU {i, 0, 0}};
+            const auto x {cpu.run_once()};
+            if (x && x.value() == program1.front())
+            {
+                auto r {process2(program1 | ranges::views::drop(1) | ranges::to_vector, (prev << 3) | (i & 0x7))};
+                if (r)
+                    return r;
+            }
         }
-        ip += 2;
     }
-    std::cout << "\tcase " << ip << ":\n\t\tstop = true;\n\t\tbreak;\n";
-    std::cout << R"XX(
-        default:
-            assert(false);
-    } // switch
-    } // for
-
-    std::cout << boost::algorithm::join(output, ",") << std::endl;
-
-    return 0;
-    }
-
-    )XX";
+    return {};
 }
 
+void part2(std::vector<REG> program)
+{
+    std::reverse(program.begin(), program.end());
+
+    fmt::println("2: {}", process2(program).value());
+}
 
 int main()
 {
-    std::cout << header;
+    REG A{0}, B{0}, C{0};
+    std::vector<REG> program;
 
     std::string line;
     while (std::getline(std::cin, line))
@@ -125,26 +80,26 @@ int main()
         }
         else if (boost::starts_with(line, "Register A: "))
         {
-            std::cout << "[[maybe_unused]] unsigned regA{" << line.substr(12) << "};\n";
+            A = std::stoul(line.substr(12));
         }
         else if (boost::starts_with(line, "Register B: "))
         {
-            std::cout << "[[maybe_unused]] unsigned regB{" << line.substr(12) << "};\n";
+            B = std::stoul(line.substr(12));
         }
         else if (boost::starts_with(line, "Register C: "))
         {
-            std::cout << "[[maybe_unused]] unsigned regC{" << line.substr(12) << "};\n";
+            C = std::stoul(line.substr(12));
         }
         else if (boost::starts_with(line, "Program: "))
         {
             std::vector<std::string> parts;
             boost::algorithm::split(parts, line.substr(9), boost::algorithm::is_any_of(","), boost::token_compress_on);
-
-            process_commands(parts);
-
-            break;
+            program = parts | ranges::views::transform([](std::string const& v) { return (REG)std::stoul(v); }) | ranges::to_vector;
         }
     }
+
+    part1(A, B, C);
+    part2(program);
 
     return 0;
 }
