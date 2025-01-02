@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <vector>
 
-using Coord = unsigned;
+using Coord = int;
 using Point = Gfx_2d::Point<Coord>;
 using PointMap = std::unordered_map<Point, char, boost::hash<Point>>;
 using PointSet = std::unordered_set<Point, boost::hash<Point>>;
@@ -36,7 +36,7 @@ using Vertex = boost::graph_traits<Graph>::vertex_descriptor;
     fmt::println("");
 }
 
-void part1(PointMap mapa, Coord max_x, Coord max_y, const Point start, const Point finish)
+void process(PointMap mapa, Coord max_x, Coord max_y, const Point start, const Point finish)
 {
     std::unordered_map<Point, Vertex, boost::hash<Point>> point2vertex;
     std::unordered_map<Vertex, Point, boost::hash<Vertex>> vertex2point;
@@ -74,24 +74,41 @@ void part1(PointMap mapa, Coord max_x, Coord max_y, const Point start, const Poi
     }
     path.insert(start);
 
-    unsigned saves_100{0};
-
+    unsigned saves1_100 {0};
     for (auto const& me : path) {
         const auto current_time {dist_map[point2vertex.at(me)]};
 
-        for (auto const& dir : {Gfx_2d::Up, Gfx_2d::Down, Gfx_2d::Left, Gfx_2d::Right}) {
-            const auto plus_1{me + dir};
-            if (!mapa.contains(plus_1) || mapa.at(plus_1) != '#') continue;
-            const auto plus_2{plus_1 + dir};
-            if (!mapa.contains(plus_2) || mapa.at(plus_2) != '.') continue;
-            const auto plus_2_time {dist_map[point2vertex.at(plus_2)]};
-            if (current_time >= plus_2_time) continue;
-            const unsigned saves{plus_2_time - current_time - 2};
-            if (saves >= 100) saves_100++;
+        for (auto const& [dst, c] : mapa) {
+            if (c != '.' || me.manhattan_dist(dst) < 2 || me.manhattan_dist(dst) > 2)
+                continue;
+            const auto dst_time {dist_map[point2vertex.at(dst)]};
+            if (current_time >= dst_time)
+                continue;
+            const unsigned saves {dst_time - current_time - 2};
+            if (saves >= 100)
+                saves1_100++;
         }
     }
 
-    fmt::println("1: {}", saves_100);
+    std::unordered_map<std::pair<Point, Point>, unsigned, boost::hash<std::pair<Point, Point>>> saves2_100;
+    for (auto const& me : path) {
+        const auto current_time {dist_map[point2vertex.at(me)]};
+
+        for (auto const& [dst, c] : mapa) {
+            const unsigned dist = me.manhattan_dist(dst);
+            if (c != '.' || dist < 2 || dist > 20)
+                continue;
+            const auto dst_time {dist_map[point2vertex.at(dst)]};
+            if ((current_time + dist) >= dst_time)
+                continue;
+            const unsigned saves {dst_time - current_time - dist};
+            if (saves >= 100)
+                saves2_100.insert({{me, dst}, saves});
+        }
+    }
+
+    fmt::println("1: {}", saves1_100);
+    fmt::println("2: {}", saves2_100.size());
 }
 
 int main()
@@ -115,13 +132,15 @@ int main()
                 finish = {max_x, max_y};
                 c = '.';
             }
-            mapa.insert({{max_x, max_y}, c});
+            if (c != '#') {
+                mapa.insert({{max_x, max_y}, c});
+            }
             ++max_x;
         }
         ++max_y;
     }
 
-    part1(mapa, max_x, max_y, start, finish);
+    process(mapa, max_x, max_y, start, finish);
 
     return 0;
 }
